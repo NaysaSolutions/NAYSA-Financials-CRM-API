@@ -75,11 +75,13 @@ Route::post('/dashBoard', [DashBoardController::class, 'index']);
 use App\Http\Controllers\LoadClientsController;
 
 Route::get('/getClients', [LoadClientsController::class, 'index']);
+Route::post('/getClientPerApp', [LoadClientsController::class, 'getClientPerApp']);
+Route::post('/getClientsdashboard', [LoadClientsController::class, 'dashboard']);
 Route::get('/getClientsModule', [LoadClientsController::class, 'getClientModules']);
 Route::get('/getClientApplications', [LoadClientsController::class, 'getClientApplications']);
 
 Route::get('/load-client-data', [LoadClientsController::class, 'loadClientData']);
-
+Route::get('/clients/default-code', [LoadClientsController::class, 'getDefaultClientCode']);
 
 
 use App\Http\Controllers\ClientController;
