@@ -12,57 +12,64 @@ class LoadClientsController extends Controller // Fix naming here
     public function loadClientData(Request $request)
     {
         try {
-            $clientCode = $request->query('client_code');
-            $appType = $request->query('app_type', 'FINANCIALS'); // default to 'FINANCIALS'
-    
+            // It's good practice to get 'voucher_code' here if that's what the frontend sends.
+            $clientCode = $request->query('voucher_code');
+            // Default to 'VOUCHERS' as confirmed in your frontend logic.
+            $appType = $request->query('app_type', 'VOUCHERS'); 
+
             if (!$clientCode) {
                 return response()->json(['error' => 'Client code is required'], 400);
             }
-    
+
             $pdo = DB::connection()->getPdo();
             $stmt = $pdo->prepare('EXEC sproc_LoadClientData @client_code = ?, @app_type = ?');
             $stmt->execute([$clientCode, $appType]);
-    
-            // Result Set 1: Client
+
+            // --- Fetching Result Sets according to SPROC order ---
+
+            // Result Set 1: Clients
             $clients = $stmt->fetchAll(\PDO::FETCH_ASSOC);
             if (empty($clients)) {
-                return response()->json(['error' => 'Client not found'], 404);
+                // Return success:false for client not found, as per your updated comment
+                return response()->json(['success' => false, 'error' => 'Client not found'], 404); 
             }
-    
+
             // Result Set 2: Modules
-            $stmt->nextRowset();
+            $stmt->nextRowset(); // Move to the 2nd result set
             $modules = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    
-            // Result Set 3: Applications
-            $stmt->nextRowset();
-            $applications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    
-            // Result Set 4: Technicians (tech_codes)
-            $stmt->nextRowset();
-            $technicians = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    
-            // After technicians
-            $stmt->nextRowset();
-            $contractDetails = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-            // After technicians
-            $stmt->nextRowset();
-            $contactDetails = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            // Result Set 3: Technicians (this is the actual assigned personnel with tech_code from SPROC)
+            $stmt->nextRowset(); // Move to the 3rd result set
+            $actualTechniciansData = $stmt->fetchAll(\PDO::FETCH_ASSOC); // Renamed for clarity
 
+            // Result Set 4: Client Contact Details (from SPROC)
+            $stmt->nextRowset(); // Move to the 4th result set
+            $actualContactDetailsData = $stmt->fetchAll(\PDO::FETCH_ASSOC); // Renamed for clarity
+
+            // --- IMPORTANT: If your SPROC returns MORE than 4 result sets,
+            // you *must* add more $stmt->nextRowset() calls here,
+            // even if you don't fetch their data, to ensure PDO doesn't get stuck.
+            // Example: $stmt->nextRowset(); // for 5th result set
+            //          $stmt->nextRowset(); // for 6th result set, etc.
+
+            // --- Constructing the final JSON response ---
             return response()->json([
                 'success' => true,
-                'clients' => $clients[0],
+                'clients' => $clients[0], // Assuming only one client record
                 'modules' => $modules,
-                'applications' => $applications,
-                'technicians' => $technicians,
-                'client_contract' => $contractDetails[0] ?? null,
-                'client_contact' => $contactDetails,
+                'technicians' => $actualTechniciansData, // This is your correct technicians (tech_code) data
+                'client_contact' => $actualContactDetailsData, // This is your correct contact details data
+                // Remove 'applications' from the response if it's not a distinct result set from your SPROC
+                // or if it's implicitly part of the 'technicians' result set data.
+                // Based on previous outputs, 'applications' data was actually the 'technicians' data.
             ], 200);
-    
+
         } catch (\Exception $e) {
+            // Log the full exception for debugging in your Laravel logs
+            \Log::error('Error loading client data: ' . $e->getMessage() . ' - ' . $e->getTraceAsString());
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'An internal server error occurred: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -169,11 +176,11 @@ public function index(Request $request) {
 public function getDefaultClientCode()
 {
     try {
-        $result = DB::select('SELECT dbo.fnClientCode() AS client_code');
+        $result = DB::select('SELECT dbo.fnClientCode() AS voucher_code');
 
         return response()->json([
             'success' => true,
-            'client_code' => $result[0]->client_code ?? null
+            'voucher_code' => $result[0]->voucher_code ?? null
         ], 200);
 
     } catch (\Exception $e) {
