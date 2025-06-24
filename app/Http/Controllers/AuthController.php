@@ -55,7 +55,11 @@ class AuthController extends Controller
     ]);
 
     // Find the user by userId, specifying the 'API' connection
-    $user = UsersDB::on(env('DB_CONNECTION'))->where('userId', $request->userId)->first();
+    // $user = UsersDB::on(env('DB_CONNECTION'))->where('userId', $request->userId)->first();
+    // $user = UsersDB::on('sqlsrv')->where('userId', $request->userId)->first();
+    $user = UsersDB::where('userId', $request->userId)->first();
+
+
 
 
     if (!$user) {
@@ -93,7 +97,7 @@ class AuthController extends Controller
         ]);
 
         // Use UsersDB model instead of User
-         $user = UsersDB::on('API')->where('email', $request->email)->first();
+         $user = UsersDB::on('MPCI')->where('email', $request->email)->first();
 
         if (!$user) {
             return response()->json([

@@ -70,6 +70,7 @@ Route::post('/PartsInventory',[AuthController::class,'PartsInventory']);
 use App\Http\Controllers\DashBoardController;
 
 Route::post('/dashBoard', [DashBoardController::class, 'index']);
+Route::post('/dashboard_GL', [DashBoardController::class, 'dashboard_GL']);
 
 
 use App\Http\Controllers\LoadClientsController;
