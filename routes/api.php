@@ -127,6 +127,9 @@ Route::post('/authenticate', [Auth2Controller::class, 'authenticate']);
 use App\Http\Controllers\EISEncryptController;
 Route::post('/requestAuthToken', [EISEncryptController::class, 'requestAuthToken']);
 
+use App\Http\Controllers\PaymentController;
+Route::post('/create-payment-intent', [PaymentController::class, 'createPaymentIntent']);
+
 // Generate Test Data
 use Illuminate\Support\Facades\Log;
 

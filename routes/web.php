@@ -2,7 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\PaymentController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -15,3 +15,7 @@ use App\Http\Controllers\AuthController;
 */
 
 Route::post('/api/reset-password', [AuthController::class, 'resetPassword']);
+
+
+Route::get('/stripe-test', [PaymentController::class, 'showPaymentPage']);
+Route::post('/create-payment-intent', [PaymentController::class, 'createPaymentIntent']);
